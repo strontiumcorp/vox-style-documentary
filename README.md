@@ -7,9 +7,26 @@ Automated production of VOX-style documentary paper-collage animation videos usi
 | **CloneVoice** (`app.clonevoice.ai`) | Narration audio (text-to-speech, "Tyler Brooks" voice by default) |
 | **VideoExpress** (`app.videoexpress.ai`) | Per-beat image generation ("Create Image" in the Create Video From Prompt modal), image-to-video clips, timeline assembly, export |
 
-The full machine-readable contract — every URL, DOM selector, API endpoint, checkbox value, corner case, and the resume protocol — lives in **`vox_workflow.json`** (v2.0.0). This README is the human overview.
+The full machine-readable contract — every URL, DOM selector, API endpoint, checkbox value, corner case, and the resume protocol — lives in **`vox_workflow.json`** (v2.6.0, also embedded inside `SYSTEM_PROMPT.md`). This README is the human overview.
+
+## ⚠️ IMPORTANT — Supported AI models (runners)
+
+The workflow is verified **working smoothly on ChatGPT 5.6 sol (medium reasoning) and on Claude models up to Claude Opus 4.8.**
+
+- ✅ **ChatGPT / Codex:** 5.6 sol at **medium** reasoning or higher. Use the flagship agentic tier, never a mini/light tier.
+- ✅ **Claude:** Opus-class models, verified up to **Opus 4.8** (Claude Code / agent mode).
+- ❌ **Light / mini / low tiers are NOT supported.** They repeatedly yield their turn mid-run (pausing after progress reports, asking "continue?"), click controls the contract does not name, and require constant "Resume" nudging. The run still *converges* thanks to the checkpoint/Resume protocol, but it is slow and manual.
+
+Rule of thumb: test any new model with a **1-minute video first** — a supported runner completes it start-to-export in one continuous run with zero nudges. If it needs nudging at 1 minute, it is not suitable for longer runs.
 
 ---
+
+## 🎬 Result samples
+
+Finished videos produced by this workflow:
+
+- [Result 1](https://drive.google.com/file/d/1-iMq3C7cch0x8_WySU8jvbQSifnhlGkD/view?usp=sharing)
+- [Result 2](https://drive.google.com/file/d/190Ct-MAxGk56VzqnZJal9Hpuu_y8QaNZ/view?usp=sharing)
 
 ## What the workflow produces
 
@@ -31,12 +48,14 @@ Prompt book + gate           - full storyboard authored per shot (title, TIME wi
                                 text-to-image prompt with exact labels, timestamped image-to-video
                                 prompt) and self-checked against the prompt_gate checklist BEFORE
                                 any generation (internal gate - never pauses the run)
-Phase 5  Images               - in the SAME VideoExpress modal: image prompt -> image type 'other'
-                                -> uncheck auto-enhance -> Create Image -> verify in My AI Images;
-                                chosen ratio asserted, QC per image (max 3 takes/beat)
-Phase 7  Clips                - same modal, right after each image: fixed video prompt, batches of 5
-                                (account cap), per-beat length, acceptance verified by data.mediaId,
-                                both enhancers OFF, Video Only ON
+Phase 5  Images               - in the SAME VideoExpress modal (TAB A, configured once; TAB B
+                                monitors): image prompt -> image type 'other' -> uncheck
+                                auto-enhance -> Create Image; FAST-QC: accept the first take,
+                                retake max 1 only on an obvious error
+Phase 7  Clips                - same modal, right after each image: that shot's timestamped
+                                image-to-video prompt, rolling 5-slot batching (submit 5, check
+                                My AI Videos in TAB B, backfill freed slots), acceptance verified
+                                by data.mediaId, both enhancers OFF, Video Only ON
 Phase 8  Assembly             - clips dragged sequentially (reverse-drop for correct order),
                                 narration on the bottom audio track at 0, endpoints matched to 0px
 Phase 9  Save + Export        - save (verify via document.title), export High/FullHD/mp4,
@@ -72,22 +91,46 @@ The run maintains **`WORKFLOW_STATE.json`** next to the workflow file:
 - CloneVoice "Create New Audio" only makes a **draft** — the audio renders when **Generate Audio** is clicked on the Preview Segments page.
 - Decline any "make this the account default" popup.
 - Verify by API / `document.title` / queue text — never by a toast.
-- Avoid text labels inside image prompts (models garble short labels ~50% of takes); add text via VideoExpress Text Animations instead.
+- Labels in images follow the prompt-book law: exact label text named in the scene AND in the closer's "no text beyond …" clause (short labels garble ~50% of takes — first take ships with a noted exception unless obviously broken).
+- Two-tab pattern: TAB A holds the configured generation modal permanently; TAB B does all Media Library monitoring — never close/reconfigure the modal between shots.
 
 ## How to use
 
-1. Make sure both tools (CloneVoice and VideoExpress) are logged in inside the browser the AI controls.
-2. Connect the CloneVoice integration in the VideoExpress profile (needed to import the narration onto the timeline).
-3. Give the AI runner `SYSTEM_PROMPT.md` (and `vox_workflow.json` alongside it).
-4. Answer its first question — paste **your own script** (used verbatim, duration derived from word count) or say **generate** (it then asks niche/idea and duration 1–5 min). Both paths ask for the ratio.
-5. Let it run. After your Phase 1 answers the run is **fully automatic** — no confirmation gates, no "type yes to continue"; it reports progress briefly while working and stops only for true blockers (logins, payments, CAPTCHA).
-6. If a run is interrupted, say **"Resume"**.
+### One-time setup
+
+1. Sign in to **CloneVoice** (`app.clonevoice.ai`) and **VideoExpress** (`app.videoexpress.ai`) in the browser the AI controls.
+2. Connect the **CloneVoice integration** in the VideoExpress profile (needed to import the narration onto the timeline).
+3. Use a **supported model** (see the IMPORTANT section above).
+
+### Start a run
+
+4. Paste **`SYSTEM_PROMPT.md`** into the AI (one file — the full contract is embedded inside it; no attachments needed).
+5. The AI first verifies both logins (auth gate). If either app is logged out, it will ask you to sign in, then continue.
+
+### Answer its questions (the only questions in the whole run)
+
+6. **Q1 — "Do you have your own narration script, or should I generate one from an idea?"**
+   - Reply **"my script"** and paste your script → it is used **verbatim** (never rewritten), duration is derived automatically from the word count (words ÷ 150; 750-word / 5-minute cap). Skip to Q4.
+   - Reply **"generate"** → continue to Q2.
+7. **Q2 — Genre.** It suggests **10 genres** (crime & documentary, history, money & power, disasters & survival, mysteries & the unexplained, technology, sports, science & nature, war & espionage, aviation & exploration — or type your own). Reply with a number or your own genre.
+8. **Q3 — Idea.** It pitches **5 concrete ideas** in your genre (each with a real date/name/number/place hook). Reply with a number, or describe your own topic.
+9. **Q4 — Ratio and duration.** **"Landscape (16:9) or Vertical (9:16)?"** (always asked, never guessed) and — generate branch only — **"How many minutes, 1–5?"**
+
+### Then it runs by itself
+
+10. From the final answer onward the run is **fully automatic** — no "type yes to continue", no approvals. In order, it will: write & show the script (FYI only) → create the narration in CloneVoice (Tyler Brooks voice, incl. the mandatory "Generate Audio" click) → measure the real audio length and plan N beats → author the full per-shot prompt book and self-check it (internal gate) → generate every image + clip inside the VideoExpress modal (two tabs: one generating, one monitoring; rolling 5-slot batching) → assemble the timeline, place the narration on the bottom track, match endpoints to 0 px → save → export (High / FullHD / mp4).
+11. It reports brief progress while working and stops **only** for true blockers: a login page, CAPTCHA, payment/credits, or an unrecoverable app error.
+12. Done = it shows the export queue confirmation ("Your movie creation is currently number N in the queue") plus a final report with every ID and proof. The finished mp4 appears in VideoExpress → **My Videos** a few minutes later.
+
+### If something breaks
+
+13. Say **"Resume"**. The AI reloads `WORKFLOW_STATE.json`, re-checks logins, reconciles the failed step against the live apps (never duplicating work already done), and continues from exactly where it stopped.
 
 ## Files
 
 | File | Purpose |
 |---|---|
-| `vox_workflow.json` | The full executable contract (selectors, APIs, rules, corner cases) |
-| `SYSTEM_PROMPT.md` | Drop-in system prompt for any AI agent (Claude, ChatGPT/Codex, etc.) |
+| `vox_workflow.json` | The full executable contract (selectors, APIs, rules, corner cases) — the editing source |
+| `SYSTEM_PROMPT.md` | STANDALONE drop-in prompt for any AI agent (Claude, ChatGPT/Codex) — the full JSON contract is embedded inside it; paste this ONE file, nothing else needed |
 | `WORKFLOW_STATE.json` | Created at runtime — live state, checkpoints, error history |
 | `README.md` | This file |

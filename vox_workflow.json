@@ -1,0 +1,383 @@
+{
+  "$schema_note": "VOX-style documentary paper-collage animation video workflow for CloneVoice + VideoExpress (v2: Artistly removed - images are generated INSIDE VideoExpress's Create Video From Prompt modal). All interaction is DOM-selector/API based; never click by screenshot pixels. Numeric folder/category/media ids are PER-ACCOUNT - always discover at runtime, never hardcode.",
+  "version": "2.2.0",
+
+  "prompt_book_standard": {
+    "purpose": "USER RULE: every run's prompts must be prepared to the polished 'Storyboard + Prompt Book' standard (reference: MH370_VideoExpress_Storyboard_and_Prompt_Book.docx). Prompts are authored per SHOT as a complete package BEFORE any generation, on one continuous timeline.",
+    "per_shot_package": {
+      "header": "SHOT <nn> / <SUPPLIED REFERENCE PROMPT for shot 1 (and 2 if it re-establishes the world) | CONTINUATION PROMPT for the rest> + a short evocative shot TITLE (e.g. 'The Date', 'The Westward Turn')",
+      "time": "TIME: <m:ss-m:ss> DURATION: <n>s - continuous cumulative project time with NO gaps (0:00-0:06, 0:06-0:12, ...); windows come from duration_math step_4 planned lengths",
+      "voiceover_cue": "the EXACT narration words this shot covers (verbatim substring of the script, in order, no overlaps, all words covered across shots)",
+      "text_to_image_prompt": {
+        "structure": "one flowing block: (1) SCENE - hero element dominating the frame, every printed label named with its EXACT text, placement, and carrier (stamp box, typewriter strip, torn headline), 1-3 supporting elements enumerated, generous negative space; (2) STYLE BLOCK - the hand-cut documentary paper collage vocabulary, adapted per scene (e.g. 'sonar charts and archival survey maps' for a seabed shot) but never dropping: torn paper edges, halftone cutouts with rough scissor cuts, masking tape, rubber stamps, visible print grain and paper fiber, matte flat documentary lighting with soft cutout shadows; (3) PALETTE LAW - desaturated tan / ink black / halftone gray with exactly ONE hot red signal accent and a restrained mustard yellow secondary; (4) CLOSER - the NOT-list (NOT digital illustration, NOT cartoon, NOT 3D render, NOT glossy, no gradients, no clutter, no watermark, no logos) ending with 'no text beyond <the exact labels specified in this scene>' and 'Premium Vox-style investigative documentary collage, <ratio>, ultra-detailed, 8K.'",
+        "label_rule": "labels ARE allowed and encouraged when a date/name/number/verdict carries the beat (MAR 8 2014, NO MAIN WRECKAGE, MH370); every label's exact text MUST appear both in the scene description AND in the closer's 'no text beyond ...' clause; a shot with no label states plain 'no text' in the closer",
+        "ratio_tag": "the prompt ends with the user's ratio (16:9 or 9:16) inside the closer - Landscape/Vertical must be followed here like everywhere else"
+      },
+      "image_to_video_prompt": {
+        "structure": "TIMESTAMPED three-act motion script scaled to the clip length L: [0 - ~L/3] seconds: locked static shot opens on the bare background plate, first elements drag/slide in and settle with two-frame paper bounces; [~L/3 - ~3L/4]: remaining elements land (tape presses, stamps hit, strings draw taut, pins click) and the composition MATCHES THE REFERENCE IMAGE COMPLETELY by ~3L/4 seconds (state this explicitly, e.g. 'The reference image is complete by 4 seconds' on a 6s clip); [~3L/4 - L]: living-poster hold - only micro-motion (a corner lifts, a thread trembles once, halftone grain breathes), nothing moves position",
+        "throughout_clause": "always end the acts with a 'Throughout:' clause: one continuous <ratio> shot, completely locked camera, rigid hand-cut paper physics, stop-motion cadence, stepped easing, two-frame settles, visible print grain, soft layered shadows, and 'Keep every printed label, cutout, color, size, and final position identical to the supplied image.'",
+        "audio_clause": "always end with an 'Audio:' clause listing shot-synchronized paper foley (slides, cardstock taps, stamp thuds, thread zips, pin clicks) plus a restrained ambience, closing with 'no generated speech'. NOTE: the workflow renders clips with Video Only checked, so this foley is aspirational metadata - it keeps the prompt to standard and is harmless; the narration remains the only audible track.",
+        "footer": "VIDEOEXPRESS COPY FIELD / <L> SECONDS / LOCKED CAMERA"
+      }
+    },
+    "continuity_rules": [
+      "recurring subjects (the aircraft, the map, the thread) keep IDENTICAL wording, color, and carrier across every shot they appear in",
+      "each CONTINUATION PROMPT's background/world must be consistent with the shots before it (same surfaces, palette, register)",
+      "shot titles form a readable arc from cold open to unresolved ending"
+    ]
+  },
+
+  "prompt_gate": {
+    "when": "BLOCKING gate between beat planning and phase_5 generation - no Create Image runs until every shot's package passes",
+    "checklist_per_shot": [
+      "header present with correct SHOT number, REFERENCE/CONTINUATION tag, and a title",
+      "TIME window continuous with the previous shot (no gap/overlap) and DURATION equals the beat's planned clip length",
+      "voiceover cue is a verbatim, in-order, non-overlapping slice of the narration script; union of all cues == entire script",
+      "text-to-image prompt contains all four parts (scene, style block, palette law, closer) and ends with the ratio + 'ultra-detailed, 8K'",
+      "every label's exact text appears in BOTH the scene description and the 'no text beyond' clause; no unlisted text is requested",
+      "exactly ONE hot red accent named; mustard yellow only as secondary",
+      "image-to-video prompt has the three timestamped acts, states completion by ~3/4 of the clip, includes the Throughout clause with the locked-camera list and the 'identical to the supplied image' sentence, and the Audio clause ending in 'no generated speech'",
+      "ratio in every prompt matches the user's Phase 1 answer (Landscape 16:9 stays 16:9 EVERYWHERE)",
+      "recurring subjects use identical wording across shots (diff-check nouns between shots)"
+    ],
+    "on_fail": "fix the package and re-check; the gate is per-shot and the whole book must pass before generation starts",
+    "record": "WORKFLOW_STATE.json beats.prompt_gate = {status: pass, shots: N, checked_at} plus per-shot package stored (title, time, cue, both prompts)"
+  },
+
+  "autonomy_contract": {
+    "rule": "The workflow is FULLY AUTOMATIC after the Phase 1 answers. The user is asked things only in Phase 1 (script source; if generating: one genre pick from the 10 suggestions, then one idea pick from the 5 suggestions; ratio; duration) and nothing else. Once the final idea (or own script), ratio, and duration are known, the run BEGINS: every remaining phase runs back-to-back without asking permission, without confirmation gates, and without waiting for acknowledgements.",
+    "no_gates": [
+      "do NOT ask 'type yes to continue' after showing the generated script - show it as an FYI and IMMEDIATELY proceed to narration (the user can interrupt at any time to edit)",
+      "do NOT ask before starting narration, images, imports, clips, assembly, save, or export",
+      "do NOT ask 'shall I continue?' between batches or phases",
+      "do NOT pause to report intermediate results and wait - report progress briefly and keep working in the same turn"
+    ],
+    "still_stops_for": [
+      "true blockers only: login required, CAPTCHA, payment/credits, an explicit unrecoverable app error, an uncontrollable browser, or a vanished job after one refresh + three inspections",
+      "an own script over the 750-word cap (needs the user's shorten-or-override decision)",
+      "a destructive action outside the workflow's scope"
+    ],
+    "progress_style": "narrate briefly while working (one line per milestone); never end the turn while required work is pending; pending/Processing states are polled, not reported as stopping points"
+  },
+  "name": "vox-style-documentary-collage",
+
+  "phase_0_auth_gate": {
+    "order": "FIRST - nothing runs before this passes",
+    "checks": [
+      {
+        "app": "CloneVoice",
+        "probe_url": "https://app.clonevoice.ai/audio",
+        "logged_in_signal": "document.title contains 'Audio - Clone Voice' and My Audio list renders",
+        "logged_out_signal": "document.title 'Log in - Clone Voice' / page text contains 'Log in to your account' + Email/Password fields"
+      },
+      {
+        "app": "VideoExpress",
+        "probe_url": "https://app.videoexpress.ai/",
+        "logged_in_signal": "editor renders: document.querySelector('canvas') present, or body text contains 'Export Video'",
+        "logged_out_signal": "login form / password field present"
+      }
+    ],
+    "on_failure": "TRUE BLOCKER: report which app(s) are logged out and ask the user to sign in. NEVER enter credentials, passwords, or API keys yourself. Re-probe after the user confirms, then continue.",
+    "record": "auth: {app: {authenticated, evidence, checked_at}} in RUNTIME_STATE.json"
+  },
+
+  "phase_1_user_inputs": {
+    "ask_in_one_message_where_possible": true,
+    "inputs": [
+      {
+        "id": "script_source",
+        "order": "FIRST question, before anything else",
+        "prompt": "Do you have your own narration script, or should I generate one from an idea? Reply 'my script' (then paste it) or 'generate'.",
+        "branch_own_script": {
+          "when": "user supplies their own script",
+          "rules": [
+            "SKIP the niche question, the 5-idea suggestions, and the script-writing step entirely - do not suggest anything; start working directly with the user's script",
+            "use the script VERBATIM as the narration text; never rewrite, extend, or 'improve' it (fix nothing unless the user asks)",
+            "derive duration from the script instead of asking: estimated_minutes = word_count / 150; if word_count > 750 (over the 5-minute cap) tell the user and ask them to shorten or approve a cap override",
+            "still ask the ratio question (never guessed)",
+            "then continue at phase_3_narration with the user's script; beats/images/clips derive from it exactly as in duration_math"
+          ]
+        },
+        "branch_generate": {
+          "when": "user says generate / has no script",
+          "then": "continue with the genre_selection, idea_selection, ratio, and duration questions below"
+        }
+      },
+      {
+        "id": "genre_selection",
+        "only_if": "script_source == generate",
+        "order": "immediately after the user selects 'generate'",
+        "prompt": "Pick a genre. Options: 1. crime and documentary (house default) 2. history 3. money and power 4. disasters and survival 5. mysteries and the unexplained 6. technology 7. sports 8. science and nature 9. war and espionage 10. aviation and exploration. Reply with a number, or type your own genre.",
+        "rule": "suggest exactly 10 different genres; the user picks one (or types their own); do not generate ideas before a genre is chosen"
+      },
+      {
+        "id": "idea_selection",
+        "only_if": "script_source == generate",
+        "order": "after the genre is selected",
+        "then": "generate exactly 5 video ideas in the chosen genre (each with a concrete hook: a date, a name, a number, or a place); the user picks one or describes their own topic. Once the final idea is selected, the run BEGINS - the autonomy contract takes over and no further approvals are requested (ratio and duration are collected in the same exchange where possible)."
+      },
+      {
+        "id": "ratio",
+        "prompt": "Should the video be Landscape (16:9) or Vertical (9:16)?",
+        "rule": "NEVER guess the ratio. It becomes the project-wide invariant.",
+        "mapping": {
+          "Landscape": {"aspect": "16:9", "videoexpress_button_text": "Landscape", "export_orientation_check": "canvas w/h ~= 1.777"},
+          "Vertical": {"aspect": "9:16", "videoexpress_button_text": "Vertical", "export_orientation_check": "canvas w/h ~= 0.5625"}
+        },
+        "applies_to": ["the CVFP modal ratio button BEFORE every Create Image", "the CVFP modal ratio button BEFORE every Create Video", "videoexpress project canvas", "export preview"],
+        "warning": "The VideoExpress CVFP modal can default to the OTHER orientation on some accounts; a mismatched image is rejected with the visible error 'Aspect ratio needs to be <ratio>.' Correct the modal button, never crop or mix orientations."
+      },
+      {
+        "id": "duration",
+        "only_if": "script_source == generate (with an own script, duration is DERIVED: word_count / 150)",
+        "prompt": "How many minutes should the video be? Choose any number from 1 to 5. Reply with a number of minutes.",
+        "max_minutes": 5,
+        "rule": "if the user asks for more than 5 minutes, explain the cap and ask them to pick 1-5"
+      }
+    ],
+    "generate_branch_sequence": "generate -> suggest 10 genres -> user picks one -> suggest 5 ideas in that genre -> user picks the final idea -> collect ratio + duration (same exchange where possible) -> the run BEGINS (autonomy contract)"
+  },
+
+  "duration_math": {
+    "purpose": "USER RULE: everything is derived from the user-selected length so the narration voice and the video clips MATCH exactly",
+    "constants": {
+      "speech_rate_wps": 2.5,
+      "words_per_minute": 150,
+      "clip_min_s": 3,
+      "clip_max_s": 10,
+      "clip_default_s": 6,
+      "clip_render_overhead_ms": 41.667,
+      "batch_size": 5
+    },
+    "step_1_words_from_minutes": {
+      "formula": "TARGET_WORDS = minutes x 150, hit within 5 percent",
+      "example_3_min": "3 min -> 450 words (427-472 acceptable)"
+    },
+    "step_2_actual_narration_duration": {
+      "rule": "after Generate Audio completes, measure A = actual mp3 duration via new Audio(src).duration - A is the SINGLE AUTHORITY for all downstream math; never use the word estimate once A exists",
+      "note": "TTS pace drifts from 2.5wps (verified: 72 words rendered 32.56s = 2.21wps), which is exactly why A must be measured, not assumed"
+    },
+    "step_3_beat_and_clip_count": {
+      "formula": "N = ceil(A / clip_default_s) beats -> N images -> N clips",
+      "example_3_min": "if A = 180.0s -> N = ceil(180/6) = 30 beats/images/clips -> 6 batches of 5",
+      "beat_text_mapping": "split the script into N beats of roughly equal spoken time (A/N seconds each, ~A/N x 2.5 words); each beat's words become that clip's scene"
+    },
+    "step_4_per_clip_length_plan": {
+      "base": "planned_clip_s = clamp(round(A/N), clip_min_s, clip_max_s)",
+      "spread": "if N x planned_clip_s < A, add +1s to evenly spread clips (never exceeding 10s) until planned total >= A; distribute the longer clips EVENLY across the story, never clustered, so each clip's cumulative end tracks its beat's timecode and picture stays synced to narration",
+      "rendered_length": "rendered = planned + ~41.667ms per clip (e.g. 6s -> 6041.667ms); use RENDERED lengths for final arithmetic",
+      "overshoot_rule": "planned total must slightly EXCEED A (video can be trimmed, never stretched); the excess is cut from the last clip at the narration endpoint via playhead+Cut+delete-tail to 0px difference"
+    },
+    "step_5_sync_audit": {
+      "rule": "after assembly, for every beat k require |clip_k_end_time - k x A/N| <= ~one clip length; larger drift means the length plan was uneven - re-plan before saving",
+      "final_invariant": "video_end_px == narration_end_px at 0px tolerance; narration starts at 0 on the bottom track"
+    }
+  },
+
+  "phase_2_script_and_beats": {
+    "runs_in": "chat",
+    "own_script_branch": "if the user supplied their own script (phase_1 script_source), SKIP the script block below entirely - the user's text IS the narration, used verbatim, no gate needed; go straight to beats after phase_3 renders it",
+    "script": {
+      "only_if": "script_source == generate",
+      "word_math": "per duration_math.step_1: TARGET words = minutes x 150 (2.5 words per second), hit within 5 percent; max 750 words at the 5-minute cap",
+      "rules": ["one continuous narration block, no headers or camera directions", "cold open on a precise date, location, and one small concrete action", "calm precise documentary tone, every sentence one self-contained idea", "facts stay accurate; write around uncertainty; never invent names, dates, numbers", "real-tragedy restraint: tension lives in objects, places, documents, money, weather, time", "mandatory cliffhanger ending, final line 12 words or fewer"],
+      "gate": "NO GATE (autonomy_contract): show the script as an FYI and immediately proceed to narration; the user can interrupt at any time to edit or stop"
+    },
+    "beats": {
+      "count": "N = ceil(A / 6) per duration_math.step_3, computed AFTER the narration renders (A = measured mp3 duration)",
+      "width": "each beat covers ~A/N seconds of narration (~A/N x 2.5 words) and maps to exactly one native-length clip (tool range 3-10s)",
+      "timecodes": "computed cumulatively against the ACTUAL narration mp3 duration, not the word estimate",
+      "output": "beat table: beat number, timecode start, planned clip length (from duration_math.step_4), exact narration words covered"
+    },
+    "image_prompts": {
+      "standard": "authored per prompt_book_standard.per_shot_package.text_to_image_prompt - scene with hero element and exact named labels, adapted style block, palette law, NOT-closer ending with the ratio + 'ultra-detailed, 8K'",
+      "label_note": "labels are allowed per the prompt-book label_rule (exact text in scene AND closer). VERIFIED WEAKNESS: short label text garbles ~50 percent per take - budget max 3 takes per labeled shot and keep the cleanest"
+    },
+    "video_prompt": "authored PER SHOT per prompt_book_standard.per_shot_package.image_to_video_prompt - timestamped three acts scaled to the clip length, Throughout clause, Audio clause; NOT one identical fixed prompt anymore",
+    "note": "the FULL prompt book (every shot's package) is prepared BEFORE generation starts and must pass prompt_gate; both prompts are consumed in the same VideoExpress modal in phase_5/phase_7"
+  },
+
+  "phase_3_narration": {
+    "app": "CloneVoice",
+    "tool": "Create Audio (text-to-speech)",
+    "url": "https://app.clonevoice.ai/audio/create",
+    "note": "USER RULE: the audio is NARRATION based on the user's selected idea - use Create Audio, NEVER Create Music. There is no music/underscore step in this workflow.",
+    "voice": {
+      "default": "Tyler Brooks",
+      "selection_steps": [
+        {"n": 1, "action": "go to https://app.clonevoice.ai/audio/create"},
+        {"n": 2, "action": "click Select Voice", "selector": "button/control with text 'Select Voice' next to the Voice label in Select Reference"},
+        {"n": 3, "action": "in the Select Voice side panel, set Gender dropdown to 'Male'", "selector": "the visible select whose options include 'All genders' and 'Male'; set value + dispatch change; voice grid refilters (~35 voices)"},
+        {"n": 4, "action": "pick Tyler Brooks at grid position column 3, row 3 (verify the tile label reads 'Tyler Brooks' before clicking - grid order can shift with Sort By; if not at 3:3, use the 'Search voices...' box)", "verify": "the Voice button now reads 'Tyler Brooks'"}
+      ]
+    },
+    "create_steps": [
+      {"n": 1, "action": "fill Name", "selector": "input[placeholder='Audio Name']"},
+      {"n": 2, "action": "select voice per voice.selection_steps"},
+      {"n": 3, "action": "language English (reference + target)"},
+      {"n": 4, "action": "fill Script with the narration script via native value setter + input/change", "selector": "textarea[placeholder='Enter your script...']"},
+      {"n": 5, "action": "click 'Create New Audio' once (NOT the nav 'Create Audio' button)", "selector": "button with exact text 'Create New Audio'"},
+      {"n": 6, "action": "page redirects to /audio/<uuid>/preview - the 'Preview Segments' page (title 'Edit Audio - Clone Voice'). This is only a DRAFT: the script is split into voiced segments but no audio is rendered yet."},
+      {"n": 7, "action": "USER RULE: click the 'Generate Audio' button on the Preview Segments page - THIS is what renders the audio. Without it the record never completes.", "selector": "button with text 'Generate Audio' at the top right of the Preview Segments header"},
+      {"n": 8, "action": "page redirects to /audio (My Audio); poll the exact title until Status Completed; capture CDN mp3 URL + duration"}
+    ],
+    "verify": {
+      "list_url": "https://app.clonevoice.ai/audio",
+      "status_read": "My Audio list shows exact title with Status Completed; Inertia props: JSON.parse(document.getElementById('app').dataset.page).props -> record {uuid, title, status, length, src}; fallback: regex public CDN mp3 from document.documentElement.innerHTML: /https?:\\/\\/cdn\\.clonevoice\\.ai[^\"'\\s]+\\.mp3/",
+      "duration_authority": "new Audio(src) loadedmetadata .duration - this number drives ALL beat timecodes and the final trim"
+    }
+  },
+
+  "phase_5_images_in_videoexpress": {
+    "app": "VideoExpress",
+    "url": "https://app.videoexpress.ai/",
+    "tool": "Create with AI > Create Video From Prompt (the SAME modal generates the image first, then the clip - Artistly is not used in v2, so there is no import phase either)",
+    "open": "sidebar <a> 'Create with AI' -> .panel card containing 'Create Video From Prompt' -> modal [class*=modal] containing that title",
+    "ratio_rule": "USER RULE: if the user answered Landscape, Landscape MUST be followed in EVERY setting - assert the modal's Landscape button carries class 'active' BEFORE Create Image and again BEFORE Create Video; same for Vertical. Never generate an image or clip in the wrong orientation.",
+    "per_beat_steps": [
+      {"n": 1, "action": "go to 'Create Video From Prompt' (open the modal if not already open; it stays open between beats)"},
+      {"n": 2, "action": "assert the ratio button = user ratio (class 'active'); click it if not", "selector": "modal button containing the phase_1 ratio button text"},
+      {"n": 3, "action": "put the shot's TEXT-TO-IMAGE prompt (from the prompt book, prompt_gate-passed) into the Image Prompt field via native value setter + input/change + blur; re-read to confirm it persisted", "selector": "textarea[name='prompt'] (the left 'Image Prompt' textarea, placeholder like 'A man drinking coffee in a rainy cafe')"},
+      {"n": 4, "action": "select the image type", "selector": "select[name='select-type'] = 'other' (options: human/2d/3d/photorealistic/other; 'other' for paper-collage - never 'human')"},
+      {"n": 5, "action": "uncheck 'Automatically enhance my image prompt'", "selector": "input[type=checkbox][name='auto_enhance_prompt'] - default CHECKED, must be UNCHECKED so the collage prompt is not rewritten server-side"},
+      {"n": 6, "action": "click 'Create Image' once", "selector": "button with text 'Create Image'"},
+      {"n": 7, "action": "verify + capture the generated image: poll GET /api/library/get_media/4?categoryId=<my_ai_images>&orderBy=id&orderDir=desc for a NEW image record (id > previous max, recorded BEFORE the click); when completed, its thumbnail appears in the modal's image carousel and becomes the active image for the video step. Record beat -> ve_image_id.", "warning": "identify the new image by the id baseline, never by newest-first alone (parallel sessions can interleave)"},
+      {"n": 8, "action": "QC the generated image (montage/screenshot): hand-cut collage look, single hot-red accent, correct user ratio, no stray text; max 3 takes per beat (re-run Create Image with the same or minimally adjusted prompt), keep the cleanest take"}
+    ],
+    "folder_discovery": "GET /library/get_categories/4 -> data[] {id, name}; needed names: my_ai_images, my_ai_videos, my_clonevoice.ai_audio. NEVER hardcode ids across accounts."
+  },
+
+  "phase_7_clips": {
+    "app": "VideoExpress",
+    "tool": "Create with AI > Create Video From Prompt (SAME modal as phase_5 - the clip is generated right after the beat's image, no library attach needed)",
+    "open": "the modal is already open from phase_5; if reopening: sidebar <a> 'Create with AI' -> .panel card containing 'Create Video From Prompt' -> modal [class*=modal] containing that title",
+    "per_beat_steps": [
+      {"n": 1, "action": "assert ratio = user ratio (again - Landscape must be followed in EVERY setting)", "selector": "modal button containing the phase_1 ratio button text has class 'active'; if not, click it (native mouse-event sequence at rect center)", "warning": "some accounts default to the other orientation"},
+      {"n": 2, "action": "use the beat's image generated in phase_5: its thumbnail must be the ACTIVE image in the modal's carousel. If continuing in the same modal right after Create Image, it already is; if the modal was reopened, attach it via 'Use from Library' -> My AI Images -> .library-item[data-ident=<ve_image_id>] -> Choose", "verify": "the active thumbnail <img> is present AND no 'Aspect ratio needs to be' error text"},
+      {"n": 3, "action": "video prompt = THIS SHOT'S timestamped IMAGE-TO-VIDEO prompt from the prompt book (prompt_gate-passed: three acts, Throughout clause, Audio clause), verbatim, via native value setter + input/change + blur; re-read to confirm it persisted", "selector": "textarea[name='video_prompt']"},
+      {"n": 4, "action": "checkbox contract (assert every one)", "values": {"auto_enhance_prompt": false, "advanced_mode": true, "enhance_video_prompt": false, "manual_video_length": true, "video_only": true, "talking_video": false, "narration_video": false, "use_consistent_character": false, "shared": false}, "warning": "'shared' (public gallery) defaults to TRUE on some accounts - uncheck it"},
+      {"n": 5, "action": "type + duration", "selectors": {"type": "select[name='select-type'] = 'other' (options: human/2d/3d/photorealistic/other; never 'human' for collage)", "duration": "input[name='video_duration'] = THIS BEAT'S planned length from duration_math.step_4 (range 3-10; rendered = value + ~41.667ms, e.g. 6s -> 6041.667ms)"}},
+      {"n": 6, "action": "click the single visible enabled 'Create Video' button once"},
+      {"n": 7, "action": "verify acceptance: poll GET /api/library/get_media/4?categoryId=<my_ai_videos>&orderBy=id&orderDir=desc for a NEW record, then GET /ai/api/get_media_prompt_data/<jobId> -> data.mediaId MUST equal the beat's generated image id (from phase_5 step 7); also assert data.enhanceVideoPrompt=false and videoOnly=true", "warning": "5 concurrent renders per ACCOUNT, shared across sessions; over-cap submissions are rejected with an alert and NO record - no record after a few polls = rejected, resubmit same beat when slots free. Map jobs by data.mediaId only, never by order."},
+      {"n": 8, "action": "dismiss any 'create <ratio> by default going forward?' Confirm popup with Close - changing account defaults requires explicit user permission"}
+    ],
+    "batching": "USER RULE: VideoExpress runs max 5 concurrent generations - map ALL scenes into consecutive batches of 5 up front (scenes 1-5, 6-10, ...); submit a full batch, wait all completed (status via get_media), pipeline next batch while QC-ing/assembling the previous; never exceed 5 active jobs",
+    "qc": {
+      "checks": ["camera fully locked (no zoom/pan)", "elements assemble then FREEZE by ~4.5s", "only subtle breathing in last 1.5s", "composition matches source image at end"],
+      "method": "frame-sample via <video crossOrigin=anonymous> + canvas overlay (6 frames/clip)",
+      "fallbacks_verified": ["if canvases come back 0,0,0,0 the CDN lacks CORS headers in that context - render a visible <video> and screenshot instead", "if the renderer refuses to decode at all: download the public mp4 (Invoke-WebRequest) and send the file to the user for eyeball QC; fresh CDN files can stream slowly for the first ~1 min (cold edge) while HEAD returns 200"]
+    }
+  },
+
+  "phase_8_assembly": {
+    "app": "VideoExpress",
+    "timeline_dom": {
+      "rows": ".tracks-wrapper .track-row (index 0=video track 1, 1=audio track 2, 2=track 3)",
+      "bricks": ".brick.video / .brick.audio with inline style.left/style.width in px; end = left+width",
+      "brick_identity": ".brick .content backgroundImage contains src=<fileName> - match to get_media fileName",
+      "zoom": "button:has(i.bi-zoom-out) / i.bi-zoom-in - zoom out BEFORE assembling so drops stay on-screen",
+      "playhead": ".timeline-header .ruler.ui-slider - $(ruler).slider('value') in px",
+      "cut": "button:has(i.bi-scissors) via $(cut).trigger('click')",
+      "delete_brick": "$(brick).trigger('ctxmenu:delete')",
+      "auto_align": "a.button-auto-align[data-original-title='Auto Align Clips'] via jQuery trigger, one per track"
+    },
+    "add_clip": "USER RULE: after generating the clips, drag them into the timeline sequentially (final left-to-right order = beat order 1..N). Mechanics: jQuery-UI drag simulation - mousedown on .library-item tile, ~12 mousemove steps on document toward target track rect, mouseup at target; VERIFIED: drops INSERT AT POSITION 0 pushing existing bricks right, so achieve the sequential order by dropping in REVERSE beat order (N first, 1 last) in one pass; verify brick count +1 after each drop, retry once; verify final order clip-by-clip via fileName->job->beat mapping",
+    "audio_tracks": [
+      {"user_rule": "import the NARRATION audio created in CloneVoice via the 'Import from CloneVoice.ai' bridge card and add it to the timeline at the BOTTOM track (the audio row below the video track), starting at left 0. Narration is the only audio in this workflow."},
+      {"track_row": 1, "content": "narration mp3 (import via 'Import from CloneVoice.ai' card -> category select = Audio -> .library-item[data-ident] -> button.button-import 'Import Selected' via $(btn).trigger('click') - plain click does NOT fire it -> the import auto-creates the my_clonevoice.ai_audio folder on first use; verify via get_media there (duration ms = authoritative endpoint) -> drag to row 1 at left 0"}
+    ],
+    "endpoint_match": {
+      "authority": "narration duration",
+      "method": "Auto Align both tracks -> re-measure -> set $(ruler).slider('value', narrationEndPx) + trigger slide/slidechange/change -> select last video brick -> Cut -> $(tailBrick).trigger('ctxmenu:delete') -> re-measure until video_end == narration_end at 0px",
+      "note": "1px recurring gaps ~every 5 clips are render round-off, not real gaps"
+    }
+  },
+
+  "phase_9_save_export": {
+    "save": {
+      "selectors": "Save caret dropdown li 'Save Project As' -> input[name='project_name'] (native setter) -> button.button-submit (native mouse-event sequence)",
+      "verified_quirk": "the Save-As dialog does NOT open on an empty project; save after content exists. On some accounts the main 'Save' button opens the name dialog directly.",
+      "proof": "document.title becomes 'Video Express - <name>' - the toast alone is insufficient; close duplicate dialogs (count input[name='project_name'])"
+    },
+    "export": {
+      "open": "button 'Export Video'",
+      "fields": {"name": "input[name='name'] (auto-fills)", "quality": "select[name='quality']='high'", "size": "select[name='size']='1080'", "format": "select[name='format']='mp4'"},
+      "orientation_check": "canvas ratio matches the phase_1 ratio mapping before Create",
+      "submit": "the single visible button.button-submit 'Create', once; stacked-dialog guard",
+      "terminal_proof": "document.body.innerText contains 'Your movie creation is currently number <N> in the queue' AND 'This process will take place in the background.'; outputs list: GET /api/get_list_output"
+    }
+  },
+
+  "state_management": {
+    "file": "WORKFLOW_STATE.json (kept beside this workflow file)",
+    "purpose": "durable record of the running state: which phase/step is done, what is in flight, where every error happened, and the single next safe action - so a crashed or interrupted run can 'Resume' from exactly the failed step instead of restarting",
+    "write_policy": [
+      "write the file immediately AFTER every verified external side effect (a job accepted, an image completed, an import verified, a brick placed, a save/title confirmed) - never before verification",
+      "one atomic write per checkpoint; keep values human-readable and ID-based so a support engineer can reconstruct the run",
+      "a checkpoint records what was PROVEN (API record ids, statuses, durations, px positions), never what was merely clicked"
+    ],
+    "schema": {
+      "run_id": "unique slug per run",
+      "workflow_version": "the version of vox_workflow.json used",
+      "status": "running | pending_user | blocked | complete",
+      "current_phase": "phase key from this file",
+      "current_step": "step number/key inside the phase",
+      "next_safe_action": "one concrete sentence: exactly what a resumed run should do first",
+      "inputs": {"script_source": "own|generate", "own_script_text": null, "genre": "one of the 10 suggested (or user-typed)", "idea": "the final pick from the 5 suggestions", "ratio": "Landscape|Vertical", "duration_min": "1-5 (derived from word_count/150 when script_source=own)"},
+      "duration_plan": {"target_words": 0, "actual_words": 0, "narration_A_s": 0, "N_beats": 0, "per_beat_clip_s": {}, "planned_total_s": 0, "overshoot_s": 0},
+      "auth": {"clonevoice": {}, "videoexpress": {}},
+      "narration": {"uuid": "", "title": "", "status": "", "duration_s": 0, "src_url": "", "voice": "Tyler Brooks", "generate_audio_clicked": false},
+      "beats": {"table": "beat -> words + timecode", "prompt_book": {"<shot>": {"title": "", "time": "", "voiceover_cue": "", "text_to_image_prompt": "", "image_to_video_prompt": ""}}, "prompt_gate": {"status": "pending|pass", "shots": 0, "checked_at": ""}},
+      "images": {"per_beat": {"<beat>": {"ve_image_id": 0, "status": "", "takes": 1, "qc": "pass|pass_with_note|exception", "note": ""}}},
+      "clips": {"batches": [{"batch_no": 1, "beats": [], "jobs": {"<beat>": 0}, "all_accepted": false, "all_completed": false}], "job_to_beat_by_mediaId": {}},
+      "timeline": {"clips_placed": [], "order_verified": false, "audio_ve_id": 0, "audio_duration_ms": 0, "video_end_px": null, "audio_end_px": null, "endpoint_diff_px": null},
+      "save": {"project_name": "", "confirmed_via_title": false},
+      "export": {"queue_text": null, "queue_position": null},
+      "error_history": [{"when": "", "phase": "", "step": "", "symptom": "exact on-screen/error text", "root_cause": "", "recovery_action": "", "outcome": "recovered|pending|blocked"}]
+    },
+    "resume_command": {
+      "trigger": "user says 'Resume'",
+      "procedure": [
+        {"n": 1, "action": "load WORKFLOW_STATE.json; read status, current_phase, current_step, next_safe_action"},
+        {"n": 2, "action": "re-run phase_0 auth gate (sessions may have expired since the failure)"},
+        {"n": 3, "action": "RECONCILE BEFORE RE-SUBMITTING: for the failed step, query the authoritative source (designs API, get_media, get_media_prompt_data, brick geometry, document.title, My Audio list) to prove whether the side effect actually happened - a step that errored client-side may have succeeded server-side"},
+        {"n": 4, "action": "mark already-existing results verified in the state file; retry ONLY the smallest missing action, from current_step - never restart a completed phase"},
+        {"n": 5, "action": "continue the normal flow, checkpointing as usual"}
+      ],
+      "never": ["repeat a side effect whose result exists", "re-click Generate/Import/Create Video/Create/Save without reconciling first", "trust the state file over the live app - the app is authoritative; the file is the map, not the territory"]
+    }
+  },
+
+  "corner_cases": [
+    {"case": "session logs out MID-RUN (not just at phase_0)", "rule": "any tool page unexpectedly showing a login form is a pending_user blocker: checkpoint state, tell the user which app to sign into, wait, re-probe, resume from current_step"},
+    {"case": "tool call times out but the in-page script keeps running", "rule": "a client timeout is NOT a failure; wait ~10s, re-read the observable state (brick counts, job lists, design ids) and only then decide; retrying immediately risks double side effects"},
+    {"case": "submission accepted client-side but no server record", "rule": "no new record with matching source id after a few polls = silent rejection (e.g. the shared 5-cap); keep the item in its batch, resubmit when your own active jobs < 5; never substitute an item from the next batch"},
+    {"case": "duplicate side effect discovered on reconcile (double import, double clip)", "rule": "keep exactly one canonical result per beat (valid metadata wins), record the duplicate id in error_history, never place duplicates on the timeline; library debris is harmless"},
+    {"case": "timeline drop lands at the wrong position or silently fails", "rule": "after every drop verify brick count +1 AND final order by fileName->job->beat; a stray brick is deleted via ctxmenu:delete and re-dropped, never dragged blindly"},
+    {"case": "stacked/duplicate dialogs (Upload Media, Save, export)", "rule": "count the target inputs/buttons; act on exactly one dialog, close extras first; after acting verify by an authoritative signal, not the toast"},
+    {"case": "narration left as draft", "rule": "the Preview Segments page is a draft; if state shows generate_audio_clicked=false or the title never reaches Completed, resume by opening /audio/<uuid>/preview and clicking Generate Audio - do NOT create a new audio"},
+    {"case": "narration duration != video total at assembly", "rule": "narration is the endpoint authority; if video is longer, trim the last clip at the narration end (playhead+Cut+delete tail); if narration is slightly longer, either trim the narration tail at the video end or regenerate ONE clip at a longer manual length - record which was chosen"},
+    {"case": "image label text garbled", "rule": "max 3 takes per labeled beat, keep the cleanest, record an exception; prefer label-free image prompts + VideoExpress Text Animations"},
+    {"case": "Create Image produced the wrong style or orientation", "rule": "verify the modal's ratio button BEFORE every Create Image; a wrong-orientation or off-style image is a failed take (counts against the 3-take budget) - never carry it into the video step"},
+    {"case": "CVFP modal in wrong orientation / 'Aspect ratio needs to be' error", "rule": "click the correct ratio button, verify class 'active', re-attach the image; never crop or accept the wrong orientation"},
+    {"case": "account-settings popup (e.g. 'make this ratio the default going forward?')", "rule": "always Close/decline; changing account defaults needs explicit user permission; note it once in error_history"},
+    {"case": "missing CloneVoice API key in VideoExpress (Import from CloneVoice.ai asks for a key)", "rule": "never enter keys; ask the user to connect the integration in the VideoExpress profile, then retry the narration import"},
+    {"case": "CDN file completed but will not stream/decode", "rule": "HEAD 200 + slow first stream = cold edge, wait ~1 min or download the file to warm it; if the browser profile cannot decode at all, download the mp4s and hand them to the user for eyeball QC; never mark QC as passed without seeing frames"},
+    {"case": "tool output redacted/blocked mid-run", "rule": "treat the action result as UNKNOWN: verify via a follow-up query that returns only counts/booleans/ids, then continue; never resubmit on the assumption the blocked call failed"},
+    {"case": "in-page JS references go stale across tool calls (captured inputs, cached lists)", "rule": "capture and consume references within a single call where possible; otherwise re-query the DOM at the start of each call"},
+    {"case": "page navigates away mid-script ('Promise was collected')", "rule": "the action usually succeeded and triggered the redirect; reconcile via API before any retry"}
+  ],
+
+  "global_rules": [
+    "AUTONOMY: after the Phase 1 answers, the run is continuous - no confirmation gates, no 'shall I continue', no yes-gates on the script (see autonomy_contract); stop only for true blockers",
+    "PROMPT GATE: the full prompt book (per prompt_book_standard) is authored and self-checked against prompt_gate BEFORE any Create Image - it is an internal quality gate, not a user gate; it never pauses the run for approval",
+    "phase_0 auth gate runs first, always; a login page or missing-API-key panel is a user action, never yours",
+    "the ratio is asked, never guessed, and applied EVERYWHERE - if the user answered Landscape it must be followed in every setting (Create Image ratio button, Create Video ratio button, canvas, export); never mix orientations or crop across them",
+    "duration is capped at 5 minutes",
+    "one authenticated producer session per VideoExpress account at a time (shared 5-cap)",
+    "never accept persistent account-settings popups (default ratio, etc.) on the user's behalf",
+    "verify every gate from an API/document.title/queue text, never a toast",
+    "checkpoint WORKFLOW_STATE.json after every verified side effect (see state_management); on interruption or 'Resume', reconcile against the live app before re-submitting anything",
+    "long JS in-page loops: keep each call under ~25s (tool timeout 30-45s); a timed-out call may STILL be running - wait and re-verify state before retrying to avoid double side effects"
+  ]
+}

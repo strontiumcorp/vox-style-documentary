@@ -1,6 +1,6 @@
 {
   "$schema_note": "VOX-style documentary paper-collage animation video workflow for CloneVoice + VideoExpress (v2: Artistly removed - images are generated INSIDE VideoExpress's Create Video From Prompt modal). All interaction is DOM-selector/API based; never click by screenshot pixels. Numeric folder/category/media ids are PER-ACCOUNT - always discover at runtime, never hardcode.",
-  "version": "2.12.1",
+  "version": "3.0.0",
 
   "two_tab_pattern": {
     "rule": "USER RULE: run VideoExpress in TWO tabs of the same authenticated browser. TAB A (generation): stays permanently on the Create Video From Prompt modal, configured once (ratio button, image type, checkbox contract) - NEVER close, navigate, or reconfigure it between shots; only the per-shot fields change (image prompt, video prompt, duration). TAB B (monitor): a second VideoExpress tab used ONLY for Media Library -> My AI Videos slot checks (and My AI Images when needed). All rolling-batch checks happen in TAB B so the modal in TAB A is never disturbed.",
@@ -16,10 +16,10 @@
     "purpose": "USER RULE: the ONE authoritative step order, written so NO GUESSING is ever needed - each step is self-contained with its exact actions (DO), its proof (VERIFY), and where to go next (NEXT). Execute strictly in sequence, as fast as possible: do the DO, confirm the VERIFY, checkpoint the step number, move to NEXT. Never skip ahead, never repeat a completed step, never insert an unlisted step, and NEVER touch any UI control a step does not name. Unexpected state -> corner_cases; no match -> checkpoint + report, do not improvise. Deep detail (exact selectors, JS patterns) lives in the phase sections - consult them only when a step names them.",
     "steps": [
       {"step": 1, "name": "AUTH GATE", "do": "Open https://app.clonevoice.ai/audio and https://app.videoexpress.ai/ in the controlled browser.", "verify": "CloneVoice: title contains 'Audio - Clone Voice'. VideoExpress: editor canvas present or 'Export Video' in body.", "next": "both pass -> 2; any login page -> true blocker: name the app, ask the user to sign in, wait, re-verify, then 2"},
-      {"step": 2, "name": "ASK SCRIPT SOURCE", "do": "Ask exactly: 'Do you have your own narration script, or should I generate one from an idea?' Wait.", "verify": "user answered", "next": "own script -> 3; generate -> 4"},
-      {"step": 3, "name": "OWN SCRIPT INTAKE", "do": "Take the pasted script VERBATIM (never rewrite). duration_min = word_count/150. If word_count > 750: ask shorten-or-override and wait. Ask ratio: 'Landscape (16:9) or Vertical (9:16)?'", "verify": "script stored, ratio answered", "next": "7"},
-      {"step": 4, "name": "GENRES", "do": "Suggest the 10 genres from genre_selection verbatim. Wait for the pick. Do NOT generate ideas yet.", "verify": "one genre chosen", "next": "5"},
-      {"step": 5, "name": "IDEAS + RATIO + DURATION", "do": "Read IDEA_HISTORY.json (beside this file) if accessible. Suggest 5 ideas in the chosen genre per idea_selection.variety_rule (never a past suggestion; max ONE famous case; spread decades/countries/sub-types; each with a date/name/number/place hook). In the same message ask ratio (Landscape/Vertical) and duration (1-5 min). Wait. Append all 5 + the pick to IDEA_HISTORY.json.", "verify": "idea + ratio + duration known", "next": "6. THE RUN BEGINS - zero questions or approvals after this point (autonomy_contract)"},
+      {"step": 2, "name": "ONE-MESSAGE INTAKE", "do": "Send ONE message asking all three basics together (phase_1_user_inputs.message_1_combined): (1) own script or generate, (2) ratio Landscape/Vertical, (3) duration 1-5 min (omit for own script - derived from word count). Wait once. Never split these across turns.", "verify": "answers captured", "next": "own script -> 3; generate -> 4"},
+      {"step": 3, "name": "OWN SCRIPT INTAKE", "do": "Store the script VERBATIM (never rewrite). duration_min = word_count/150; if >750 words say so and ask shorten-or-override in ONE message.", "verify": "script + ratio stored", "next": "7. THE RUN BEGINS - no more questions"},
+      {"step": 4, "name": "GENRE (single message, ends the questioning)", "do": "Send ONE message with the 10 genres + 'reply with a number and I will pick a fresh story and start immediately; or give your own topic; or add IDEAS to see 5 options first' (phase_1_user_inputs.message_2_genre_and_idea). Wait once.", "verify": "genre (or own topic) received", "next": "5"},
+      {"step": 5, "name": "IDEA (usually zero user turns)", "do": "DEFAULT: pick the idea YOURSELF per idea_selection.variety_rule (check IDEA_HISTORY.json, avoid past suggestions and famous textbook cases) and announce it in one line. ONLY if the user asked for IDEAS: send 5 options, wait once for the pick. Append the idea(s) to IDEA_HISTORY.json.", "verify": "idea fixed", "next": "6. THE RUN BEGINS - zero questions, approvals, or confirmations from here to the final report"},
       {"step": 6, "name": "SCRIPT", "do": "Write the narration: duration_min x 150 words (within 5%), one continuous block, cold open on a precise date/place/action, factual, cliffhanger final line <= 12 words. Show it as FYI only.", "verify": "word count in range", "next": "7 immediately - NO yes-gate"},
       {"step": 7, "name": "NARRATION", "do": "https://app.clonevoice.ai/audio/create -> fill Name (input[placeholder='Audio Name']) -> click Select Voice -> Gender dropdown = Male -> click the tile labeled 'Tyler Brooks' (verify label text, position can shift) -> paste script into textarea[placeholder='Enter your script...'] -> click button 'Create New Audio' (NOT the nav item) -> on the Preview Segments page click 'Generate Audio' (MANDATORY - preview is only a draft).", "verify": "My Audio lists the exact title with Status Completed; capture the CDN mp3 URL; measure A = real mp3 duration (Audio.duration; fallback AudioContext.decodeAudioData)", "next": "8"},
       {"step": 8, "name": "DURATION MATH", "do": "N = ceil(A/6). per_beat_s = clamp(round(A/N),3,10); if N x per_beat_s < A add +1s to evenly spread beats (max 10s each) until planned total >= A. Split the script into N sequential voiceover cues of ~A/N seconds each.", "verify": "planned total >= A; cues cover the whole script in order, no overlap", "next": "9"},
@@ -90,7 +90,9 @@
       "do NOT ask 'type yes to continue' after showing the generated script - show it as an FYI and IMMEDIATELY proceed to narration (the user can interrupt at any time to edit)",
       "do NOT ask before starting narration, images, imports, clips, assembly, save, or export",
       "do NOT ask 'shall I continue?' between batches or phases",
-      "do NOT pause to report intermediate results and wait - report progress briefly and keep working in the same turn"
+      "do NOT pause to report intermediate results and wait - report progress briefly and keep working in the same turn",
+      "NEVER ask permission to click a control that this workflow already defines (VERIFIED failures: 'May I click Create New Audio?', 'May I click Generate Audio?'). Every click named in this contract - Create New Audio, Generate Audio, Create Image, Create Video, drags, Auto Align, Cut, delete tail, Save, Export Create - is PRE-AUTHORIZED by the user starting the run. Asking is a contract violation",
+      "NEVER end a turn after finishing a phase or a shot. A phase boundary is not a stopping point: narration -> prompt book -> generation -> assembly -> save -> export all happen in ONE continuous effort. If the user has to type 'continue', 'move forward', or 'resume', the run has already failed its autonomy contract"
     ],
     "still_stops_for": [
       "true blockers only: login required, CAPTCHA, payment/credits, an explicit unrecoverable app error, an uncontrollable browser, or a vanished job after one refresh + three inspections",
@@ -122,61 +124,38 @@
   },
 
   "phase_1_user_inputs": {
-    "ask_in_one_message_where_possible": true,
-    "inputs": [
-      {
-        "id": "script_source",
-        "order": "FIRST question, before anything else",
-        "prompt": "Do you have your own narration script, or should I generate one from an idea? Reply 'my script' (then paste it) or 'generate'.",
-        "branch_own_script": {
-          "when": "user supplies their own script",
-          "rules": [
-            "SKIP the niche question, the 5-idea suggestions, and the script-writing step entirely - do not suggest anything; start working directly with the user's script",
-            "use the script VERBATIM as the narration text; never rewrite, extend, or 'improve' it (fix nothing unless the user asks)",
-            "derive duration from the script instead of asking: estimated_minutes = word_count / 150; if word_count > 750 (over the 5-minute cap) tell the user and ask them to shorten or approve a cap override",
-            "still ask the ratio question (never guessed)",
-            "then continue at phase_3_narration with the user's script; beats/images/clips derive from it exactly as in duration_math"
-          ]
-        },
-        "branch_generate": {
-          "when": "user says generate / has no script",
-          "then": "continue with the genre_selection, idea_selection, ratio, and duration questions below"
-        }
+    "USER_RULE_ONE_MESSAGE_INTAKE": "Ask the basics in ONE message, never one question per turn. The generate branch costs at most ONE extra message. Total user exchanges in a normal run: 1 (own script) or 2 (generate). Nothing else is ever asked.",
+    "message_1_combined": {
+      "order": "FIRST user contact, immediately after the silent auth gate",
+      "ask_all_three_together": [
+        "1. Script: do you have your own narration script (paste it), or should I generate one from an idea? Reply 'my script' + the text, or 'generate'.",
+        "2. Ratio: Landscape (16:9) or Vertical (9:16)?",
+        "3. Duration: how many minutes, 1-5? (skip if you pasted your own script - I derive it from the word count)"
+      ],
+      "rules": [
+        "send these as ONE message and wait once; never split them across turns",
+        "if the user answers only some of them, ask ONLY for the missing pieces in a single follow-up",
+        "own script -> use it VERBATIM, duration = word_count/150 (>750 words: say so and ask shorten-or-override), then THE RUN BEGINS - go straight to narration",
+        "generate -> send message_2_genre_and_idea, then THE RUN BEGINS"
+      ]
+    },
+    "message_2_genre_and_idea": {
+      "only_if": "script_source == generate",
+      "ask": "ONE message containing the 10 genres (crime and documentary, history, money and power, disasters and survival, mysteries and the unexplained, technology, sports, science and nature, war and espionage, aviation and exploration) plus this instruction: 'Reply with a genre number and I will pick a fresh story in it and start immediately. Optionally add your own topic instead, or add the word IDEAS if you want 5 options to choose from first.'",
+      "default_path": "user replies with a genre number only -> the agent SELECTS the idea itself per idea_selection.variety_rule (never a past IDEA_HISTORY.json entry, lesser-known over famous) and starts - NO idea-selection round",
+      "opt_in_path": "only if the user asked for IDEAS: send the 5 suggestions, wait once for the pick, then start",
+      "after_this": "THE RUN BEGINS - zero further questions, approvals, or confirmations until the final report"
+    },
+    "ratio": {
+      "rule": "NEVER guess the ratio. It is the project-wide invariant.",
+      "mapping": {
+        "Landscape": {"aspect": "16:9", "videoexpress_button_text": "Landscape", "export_orientation_check": "canvas w/h ~= 1.777"},
+        "Vertical": {"aspect": "9:16", "videoexpress_button_text": "Vertical", "export_orientation_check": "canvas w/h ~= 0.5625"}
       },
-      {
-        "id": "genre_selection",
-        "only_if": "script_source == generate",
-        "order": "immediately after the user selects 'generate'",
-        "prompt": "Pick a genre. Options: 1. crime and documentary (house default) 2. history 3. money and power 4. disasters and survival 5. mysteries and the unexplained 6. technology 7. sports 8. science and nature 9. war and espionage 10. aviation and exploration. Reply with a number, or type your own genre.",
-        "rule": "suggest exactly 10 different genres; the user picks one (or types their own); do not generate ideas before a genre is chosen"
-      },
-      {
-        "id": "idea_selection",
-        "only_if": "script_source == generate",
-        "order": "after the genre is selected",
-        "then": "generate exactly 5 video ideas in the chosen genre (each with a concrete hook: a date, a name, a number, or a place); the user picks one or describes their own topic. Once the final idea is selected, the run BEGINS - the autonomy contract takes over and no further approvals are requested (ratio and duration are collected in the same exchange where possible).",
-        "variety_rule": "USER RULE - the 5 ideas MUST differ from run to run. Without a countermeasure every fresh chat converges on the same 'greatest hits' (crime always yields Antwerp / D.B. Cooper / Gardner / Lufthansa / Hatton Garden). Requirements: (1) at most ONE globally famous textbook case per list - the other 4 must be lesser-known but well-documented stories; (2) spread the 5 across different decades AND at least 3 different countries/continents; (3) spread across different sub-types of the genre (for crime: e.g. a heist, a disappearance, a fraud, a forgery, an escape - never 5 heists); (4) before suggesting, check IDEA_HISTORY.json beside this workflow file - NEVER re-suggest an idea already listed there; after the user picks, append ALL 5 suggested ideas + the chosen one to IDEA_HISTORY.json (create it if missing); (5) if the filesystem is unavailable (paste-only sandbox), rules 1-3 still apply - deliberately reach past the first examples that come to mind."
-      },
-      {
-        "id": "ratio",
-        "prompt": "Should the video be Landscape (16:9) or Vertical (9:16)?",
-        "rule": "NEVER guess the ratio. It becomes the project-wide invariant.",
-        "mapping": {
-          "Landscape": {"aspect": "16:9", "videoexpress_button_text": "Landscape", "export_orientation_check": "canvas w/h ~= 1.777"},
-          "Vertical": {"aspect": "9:16", "videoexpress_button_text": "Vertical", "export_orientation_check": "canvas w/h ~= 0.5625"}
-        },
-        "applies_to": ["the CVFP modal ratio button BEFORE every Create Image", "the CVFP modal ratio button BEFORE every Create Video", "videoexpress project canvas", "export preview"],
-        "warning": "The VideoExpress CVFP modal can default to the OTHER orientation on some accounts; a mismatched image is rejected with the visible error 'Aspect ratio needs to be <ratio>.' Correct the modal button, never crop or mix orientations."
-      },
-      {
-        "id": "duration",
-        "only_if": "script_source == generate (with an own script, duration is DERIVED: word_count / 150)",
-        "prompt": "How many minutes should the video be? Choose any number from 1 to 5. Reply with a number of minutes.",
-        "max_minutes": 5,
-        "rule": "if the user asks for more than 5 minutes, explain the cap and ask them to pick 1-5"
-      }
-    ],
-    "generate_branch_sequence": "generate -> suggest 10 genres -> user picks one -> suggest 5 ideas in that genre -> user picks the final idea -> collect ratio + duration (same exchange where possible) -> the run BEGINS (autonomy contract)"
+      "applies_to": ["the CVFP modal ratio button BEFORE every Create Image", "the CVFP modal ratio button BEFORE every Create Video", "videoexpress project canvas", "export preview"],
+      "warning": "The VideoExpress CVFP modal can default to the OTHER orientation on some accounts; a mismatched image is rejected with the visible error 'Aspect ratio needs to be <ratio>.' Correct the modal button, never crop or mix orientations."
+    },
+    "duration": {"max_minutes": 5, "rule": "if the user asks for more than 5 minutes, say so and ask for 1-5 in the same message"}
   },
 
   "duration_math": {

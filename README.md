@@ -7,17 +7,35 @@ Automated production of VOX-style documentary paper-collage animation videos usi
 | **CloneVoice** (`app.clonevoice.ai`) | Narration audio (text-to-speech, "Tyler Brooks" voice by default) |
 | **VideoExpress** (`app.videoexpress.ai`) | Per-beat image generation ("Create Image" in the Create Video From Prompt modal), image-to-video clips, timeline assembly, export |
 
-The full machine-readable contract — every URL, DOM selector, API endpoint, checkbox value, corner case, and the resume protocol — lives in **`vox_workflow.json`** (v2.6.0, also embedded inside `SYSTEM_PROMPT.md`). This README is the human overview.
+The full machine-readable contract — every URL, DOM selector, API endpoint, checkbox value, corner case, and the resume protocol — lives in **`vox_workflow.json`** (v3.3.1, also embedded inside `SYSTEM_PROMPT.md`). This README is the human overview.
 
 ## ⚠️ IMPORTANT — Supported AI models (runners)
 
-The workflow is verified **working smoothly on ChatGPT 5.6 sol (medium reasoning) and on Claude models up to Claude Opus 4.8.**
+A run is 100+ browser actions over 30–60 minutes. What it demands is **stamina and instruction adherence**, not raw problem-solving — so the runner tier matters more than anything else in this repo.
 
-- ✅ **ChatGPT / Codex:** 5.6 sol at **medium** reasoning or higher. Use the flagship agentic tier, never a mini/light tier.
-- ✅ **Claude:** Opus-class models, verified up to **Opus 4.8** (Claude Code / agent mode).
-- ❌ **Light / mini / low tiers are NOT supported.** They repeatedly yield their turn mid-run (pausing after progress reports, asking "continue?"), click controls the contract does not name, and require constant "Resume" nudging. The run still *converges* thanks to the checkpoint/Resume protocol, but it is slow and manual.
+### ChatGPT / Codex — GPT-5.6
 
-Rule of thumb: test any new model with a **1-minute video first** — a supported runner completes it start-to-export in one continuous run with zero nudges. If it needs nudging at 1 minute, it is not suitable for longer runs.
+GPT-5.6 has two independent dials: the **capability tier** (Luna → Terra → Sol) and the **reasoning effort** (Light / Medium / High / Extra High). They do not substitute for each other — Luna at High reasoning is still Luna, and Sol at Light can beat Luna at High.
+
+| Tier | Positioning | This workflow |
+|---|---|---|
+| **Luna** | fastest, cheapest, high-volume | ❌ stalls constantly |
+| **Terra** | balanced, everyday work | ❌ stalls constantly |
+| **Sol** | flagship: complex reasoning, coding, agents | ✅ **use this — Medium reasoning or higher** |
+
+**✅ Recommended: GPT-5.6 Sol · Medium** (or High for long 4–5 minute runs).
+
+**❌ Luna Light / Terra Light are not supported.** Verified in live testing, they: ask permission mid-run, hand UI clicks back to the user ("please open the modal and reply Resume"), yield the turn after each phase, and let the browser session get cleaned up between turns. The run still *converges* thanks to the checkpoint/Resume protocol — but only with constant nudging.
+
+### Claude
+
+✅ Opus-class models, verified up to **Opus 4.8** (Claude Code / agent mode).
+
+### Why a prompt can't fix a weak tier
+
+Instructions govern behavior *within* a turn; they cannot restart a turn that has already ended. When a light model yields, no rule in this file is running. The only real fixes are a stronger tier, an external auto-continue loop that re-sends "Resume", or deliberately chunked runs (one 5-shot batch per turn — always saved and checkpointed, so nothing is lost).
+
+**Litmus test for any new model:** run a **1-minute video**. A supported runner completes it start-to-export in one continuous run with zero nudges. If it needs nudging at 1 minute, it will need dozens at 5.
 
 ---
 
@@ -36,10 +54,11 @@ One finished mp4: a continuous "Fern-style" narrated documentary over hand-cut-n
 
 ```
 Phase 0  Auth gate            - verify CloneVoice and VideoExpress are logged in (blocker if not)
-Phase 1  User inputs          - FIRST: own script or generate? Own script = used verbatim, no
-                                suggestions, duration derived (words/150); Generate = 10 genres ->
-                                pick one -> 5 ideas -> pick one -> run begins; + duration (1-5 min).
-                                BOTH branches: ratio (Landscape 16:9 / Vertical 9:16)
+Phase 1  User inputs          - ONE message asks all three: own script or generate, ratio
+                                (Landscape 16:9 / Vertical 9:16), duration (1-5 min; derived from
+                                word count for an own script). Generate = ONE more message with 10
+                                genres; the agent then picks the story itself (reply IDEAS for 5
+                                options). Then the run begins - no further questions
 Phase 2  Script and beats     - (generate branch only) narration script (minutes x 150 words),
                                 beat table, image prompts
 Phase 3  Narration            - CloneVoice Create Audio -> Tyler Brooks voice -> Create New Audio

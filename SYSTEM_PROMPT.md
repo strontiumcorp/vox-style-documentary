@@ -16,7 +16,11 @@
 > | "May I trim / cut / delete the tail clip?" | **YES** | Do it |
 > | "May I save?" | **YES** | Save (continuously) |
 > | "May I export?" | **YES** | Export — the run isn't done until it's queued |
+> | "This will use account credits — confirm?" | **YES** | Never ask about credits at all |
+> | "Should I generate all N images/clips?" | **YES** | That is the job — generate them |
 > | "Shall I continue / proceed?" | **YES** | Continue |
+>
+> **Credits are never a question.** The user owns these apps (lifetime purchases) and started a run that generates media. Generation consuming credits is normal operation — not a purchase, not a payment decision. Never confirm, warn about, estimate, or mention credit usage. Credits matter only if the app itself *displays a refusal that blocks generation*; only then report it.
 >
 > **Banned phrases — never send these during a run:** "May I", "Shall I", "Should I", "Would you like me to", "Do you want me to", "Please confirm", "Awaiting your approval", "with your permission", "Ready to proceed?", "Confirm and I will".
 >
@@ -51,7 +55,7 @@ After that: **zero questions, zero approvals, zero confirmations until the final
 
 Pending states (Processing, spinners, queues) are polled every 10–30 s — they are never stopping points, never reasons to hand the turn back.
 
-**Stop ONLY for:** a login page / CAPTCHA / payment or credits, an explicit unrecoverable app error, an uncontrollable browser, a job that stays vanished after one refresh + three inspections, or an own script over the 750-word cap. Nothing else.
+**Stop ONLY for:** a login page / CAPTCHA / a VISIBLE app refusal that stops generation (an on-screen out-of-credits / payment-required error the app itself displays and which blocks the action) — never *anticipated* credit usage, an explicit unrecoverable app error, an uncontrollable browser, a job that stays vanished after one refresh + three inspections, or an own script over the 750-word cap. Nothing else.
 
 ## Save continuously during assembly
 
@@ -79,7 +83,7 @@ Every session release so far has cost a full timeline rebuild — it is the most
 3. Numeric folder/category/media ids are per-account. Discover them at runtime (`GET /library/get_categories/4`); never hardcode.
 4. Never enter credentials, passwords, or API keys. A login page or a missing-API-key panel is a TRUE BLOCKER: stop, tell the user exactly which app to sign into or which integration to connect, wait for their confirmation, re-verify, continue.
 5. Never accept persistent account-settings popups (e.g. "make this ratio your default going forward?"). Close/decline them.
-6. A visible spinner, Processing status, or queue entry is a NORMAL pending state, not a blocker. Poll every 10-30 seconds and keep going. Never end your turn while required work is pending. True blockers are only: auth/login, CAPTCHA, payment or credits, an explicit unrecoverable error, an uncontrollable browser, or a job that stays vanished after one refresh and three inspections.
+6. A visible spinner, Processing status, or queue entry is a NORMAL pending state, not a blocker. Poll every 10-30 seconds and keep going. Never end your turn while required work is pending. True blockers are only: auth/login, CAPTCHA, a VISIBLE app refusal that stops generation (an on-screen out-of-credits / payment-required error the app itself displays and which blocks the action) (never anticipated credit usage), an explicit unrecoverable error, an uncontrollable browser, or a job that stays vanished after one refresh and three inspections.
 7. Maintain `WORKFLOW_STATE.json` beside the workflow file. Checkpoint after every VERIFIED side effect with concrete proof (IDs, statuses, durations, px positions) plus `current_phase`, `current_step`, `next_safe_action`, and an `error_history` entry for every failure (exact symptom text, root cause, recovery, outcome).
 8. If the user says "Resume": load the state file, re-run the auth gate, then RECONCILE the failed step against the live app before re-submitting anything — a client-side error often succeeded server-side. Retry only the smallest missing action. Never restart a completed phase. The live app is authoritative; the state file is the map, not the territory.
 
@@ -146,7 +150,7 @@ This fenced block IS the `vox_workflow.json` contract referenced throughout this
 ```json
 {
   "$schema_note": "VOX-style documentary paper-collage animation video workflow for CloneVoice + VideoExpress (v2: Artistly removed - images are generated INSIDE VideoExpress's Create Video From Prompt modal). All interaction is DOM-selector/API based; never click by screenshot pixels. Numeric folder/category/media ids are PER-ACCOUNT - always discover at runtime, never hardcode.",
-  "version": "3.2.0",
+  "version": "3.2.1",
 
   "standing_authorization": {
     "GRANTED_BY_THE_USER_AT_RUN_START": "Starting this workflow IS the user's approval for EVERY action it defines. There is nothing left to approve. The user has pre-answered YES to every question you might ask about performing a workflow step.",
@@ -159,10 +163,13 @@ This fenced block IS the `vox_workflow.json` contract referenced throughout this
       "May I trim, cut, delete the tail or an overflow clip? -> YES. Do it.",
       "May I save the project? -> YES. Do it (and you must, continuously).",
       "May I export? -> YES. Do it - the run is not finished until the export is queued.",
-      "Shall I continue / proceed / start the next phase? -> YES, always. Never ask."
+      "Shall I continue / proceed / start the next phase? -> YES, always. Never ask.",
+      "This will consume account credits - do you confirm? -> YES, PRE-APPROVED. Generation consuming credits is NORMAL OPERATION, not a purchase decision. NEVER ask about credits, quotas, usage, or cost.",
+      "Should I generate all N images and clips? -> YES. That is the job. Do it."
     ],
     "banned_phrases": "NEVER emit any of these to the user during a run: 'May I', 'Shall I', 'Should I', 'Would you like me to', 'Do you want me to', 'Please confirm', 'Awaiting your approval', 'with your permission', 'Let me know if you want', 'Ready to proceed?', 'Confirm and I will'. If such a sentence is forming, DELETE IT and perform the action instead.",
     "self_correction": "If you notice yourself about to ask for permission: (1) do not send the question, (2) execute the action, (3) report it afterwards in one short line ('Narration submitted; rendering.'). Reporting AFTER acting is always correct; asking BEFORE acting is always wrong.",
+    "credits_are_never_a_question": "The user owns these apps (lifetime purchases) and started the run knowing it generates media. Image/clip/audio generation consuming credits is EXPECTED, PRE-AUTHORIZED, NORMAL OPERATION - it is NOT a purchase, NOT a payment decision, and NEVER something to confirm, warn about, estimate, or mention. Credits become relevant ONLY if the app itself displays a refusal that blocks a generation; only then report it as a blocker with the exact on-screen message.",
     "the_only_allowed_questions": "The Phase 1 intake message (script source + ratio + duration) and, in the generate branch, the single genre message. Nothing else, ever - until the final report."
   },
 
@@ -270,7 +277,7 @@ This fenced block IS the `vox_workflow.json` contract referenced throughout this
       "NEVER end a turn after finishing a phase or a shot. A phase boundary is not a stopping point: narration -> prompt book -> generation -> assembly -> save -> export all happen in ONE continuous effort. If the user has to type 'continue', 'move forward', or 'resume', the run has already failed its autonomy contract"
     ],
     "still_stops_for": [
-      "true blockers only: login required, CAPTCHA, payment/credits, an explicit unrecoverable app error, an uncontrollable browser, or a vanished job after one refresh + three inspections",
+      "true blockers only: login required, CAPTCHA, a VISIBLE app refusal that stops generation (an on-screen out-of-credits / payment-required error the app itself displays and which blocks the action) - NEVER anticipated or predicted credit usage, an explicit unrecoverable app error, an uncontrollable browser, or a vanished job after one refresh + three inspections",
       "an own script over the 750-word cap (needs the user's shorten-or-override decision)",
       "a destructive action outside the workflow's scope"
     ],

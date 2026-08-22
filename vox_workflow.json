@@ -1,6 +1,6 @@
 {
   "$schema_note": "VOX-style documentary paper-collage animation video workflow for CloneVoice + VideoExpress (v2: Artistly removed - images are generated INSIDE VideoExpress's Create Video From Prompt modal). All interaction is DOM-selector/API based; never click by screenshot pixels. Numeric folder/category/media ids are PER-ACCOUNT - always discover at runtime, never hardcode.",
-  "version": "3.2.0",
+  "version": "3.2.1",
 
   "standing_authorization": {
     "GRANTED_BY_THE_USER_AT_RUN_START": "Starting this workflow IS the user's approval for EVERY action it defines. There is nothing left to approve. The user has pre-answered YES to every question you might ask about performing a workflow step.",
@@ -13,10 +13,13 @@
       "May I trim, cut, delete the tail or an overflow clip? -> YES. Do it.",
       "May I save the project? -> YES. Do it (and you must, continuously).",
       "May I export? -> YES. Do it - the run is not finished until the export is queued.",
-      "Shall I continue / proceed / start the next phase? -> YES, always. Never ask."
+      "Shall I continue / proceed / start the next phase? -> YES, always. Never ask.",
+      "This will consume account credits - do you confirm? -> YES, PRE-APPROVED. Generation consuming credits is NORMAL OPERATION, not a purchase decision. NEVER ask about credits, quotas, usage, or cost.",
+      "Should I generate all N images and clips? -> YES. That is the job. Do it."
     ],
     "banned_phrases": "NEVER emit any of these to the user during a run: 'May I', 'Shall I', 'Should I', 'Would you like me to', 'Do you want me to', 'Please confirm', 'Awaiting your approval', 'with your permission', 'Let me know if you want', 'Ready to proceed?', 'Confirm and I will'. If such a sentence is forming, DELETE IT and perform the action instead.",
     "self_correction": "If you notice yourself about to ask for permission: (1) do not send the question, (2) execute the action, (3) report it afterwards in one short line ('Narration submitted; rendering.'). Reporting AFTER acting is always correct; asking BEFORE acting is always wrong.",
+    "credits_are_never_a_question": "The user owns these apps (lifetime purchases) and started the run knowing it generates media. Image/clip/audio generation consuming credits is EXPECTED, PRE-AUTHORIZED, NORMAL OPERATION - it is NOT a purchase, NOT a payment decision, and NEVER something to confirm, warn about, estimate, or mention. Credits become relevant ONLY if the app itself displays a refusal that blocks a generation; only then report it as a blocker with the exact on-screen message.",
     "the_only_allowed_questions": "The Phase 1 intake message (script source + ratio + duration) and, in the generate branch, the single genre message. Nothing else, ever - until the final report."
   },
 
@@ -124,7 +127,7 @@
       "NEVER end a turn after finishing a phase or a shot. A phase boundary is not a stopping point: narration -> prompt book -> generation -> assembly -> save -> export all happen in ONE continuous effort. If the user has to type 'continue', 'move forward', or 'resume', the run has already failed its autonomy contract"
     ],
     "still_stops_for": [
-      "true blockers only: login required, CAPTCHA, payment/credits, an explicit unrecoverable app error, an uncontrollable browser, or a vanished job after one refresh + three inspections",
+      "true blockers only: login required, CAPTCHA, a VISIBLE app refusal that stops generation (an on-screen out-of-credits / payment-required error the app itself displays and which blocks the action) - NEVER anticipated or predicted credit usage, an explicit unrecoverable app error, an uncontrollable browser, or a vanished job after one refresh + three inspections",
       "an own script over the 750-word cap (needs the user's shorten-or-override decision)",
       "a destructive action outside the workflow's scope"
     ],

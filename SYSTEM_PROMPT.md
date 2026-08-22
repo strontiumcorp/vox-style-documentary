@@ -25,12 +25,16 @@
 > | "May I submit the next batch?" | **YES** | Submit it |
 > | "May I add clips / import the narration?" | **YES** | Do it |
 > | "May I trim / cut / delete the tail clip?" | **YES** | Do it |
+> | "Authorize deletion of the 9px overflow tail?" | **YES** | Delete it, then say so |
+> | "May I delete this stray / duplicate brick?" | **YES** | Delete it |
 > | "May I save?" | **YES** | Save (continuously) |
 > | "May I export?" | **YES** | Export — the run isn't done until it's queued |
 > | "This will use account credits — confirm?" | **YES** | Never ask about credits at all |
 > | "Should I generate all N images/clips?" | **YES** | That is the job — generate them |
 > | "Please open the modal / set the ratio, then reply Resume" | **NEVER ASK** | Open and set it yourself |
 > | "Shall I continue / proceed?" | **YES** | Continue |
+>
+> **Deleting timeline material is editing, not data loss.** Cutting a clip, removing a tail fragment, a stray brick or a duplicate touches only ephemeral timeline state — the source clip and the library media are untouched, and the project is saved continuously, so any edit is recoverable. Never write *"Authorize deletion of…"*, *"Confirm I may delete…"* or *"Shall I remove…"*. Delete it and report it in one line: *"Trimmed the 9px tail; endpoints match at 0px."* The only things you never delete at all are saved projects, library media, and anything outside this run.
 >
 > **Credits are never a question.** The user owns these apps (lifetime purchases) and started a run that generates media. Generation consuming credits is normal operation — not a purchase, not a payment decision. Never confirm, warn about, estimate, or mention credit usage. Credits matter only if the app itself *displays a refusal that blocks generation*; only then report it.
 >
@@ -182,13 +186,31 @@ This fenced block IS the `vox_workflow.json` contract referenced throughout this
 ```json
 {
   "$schema_note": "VOX-style documentary paper-collage animation video workflow for CloneVoice + VideoExpress (v2: Artistly removed - images are generated INSIDE VideoExpress's Create Video From Prompt modal). All interaction is DOM-selector/API based; never click by screenshot pixels. Numeric folder/category/media ids are PER-ACCOUNT - always discover at runtime, never hardcode.",
-  "version": "3.3.1",
+  "version": "3.4.0",
 
   "how_to_start": {
     "RECEIVING_THIS_DOCUMENT_STARTS_THE_RUN": "This file is your OPERATING INSTRUCTION SET, not a document to review, summarize, critique, or wait on. However it arrives - pasted into chat, attached as pasted-text.txt, or loaded from disk - the run has begun the moment you receive it.",
     "your_first_action": "Do NOT reply with a summary, a question about what to create, or 'tell me what you'd like'. Execute master_sequence step 1 (auth gate) immediately, then send the step 2 Phase 1 intake message.",
     "the_topic_is_not_missing": "This document deliberately contains NO topic, script, or deliverable request - the topic is collected BY the intake message you are about to send (own script or generate; ratio; duration). A missing topic is never a reason to ask what the user wants; it is the expected starting state.",
     "first_output_template": "A short line confirming both apps are signed in, followed by the three intake questions. Nothing else."
+  },
+
+  "deletions_are_edits_not_data_loss": {
+    "rule": "USER RULE - STRICT (verified 2026-08-22: a Sol-medium run stopped for 2.5 hours asking 'Authorize deletion of the 9px overflow tail fragment'). Removing timeline material is EDITING, not deletion of data, and is NEVER something to authorize, confirm, or announce as a risk. Timeline bricks are ephemeral edit state in an unsaved-or-resaveable project; the source clip and the library media are untouched by any timeline operation.",
+    "always_do_without_asking": [
+      "cut a clip at the playhead and delete the tail fragment (endpoint matching)",
+      "delete an overflow clip or a stray/misplaced brick",
+      "delete a duplicate brick found during reconcile",
+      "click New to abandon an unusable UNSAVED timeline"
+    ],
+    "never_do_at_all": [
+      "delete a SAVED project",
+      "delete library media (My AI Images / My AI Videos / audio records)",
+      "delete anything belonging to another project or another user",
+      "change account settings or defaults"
+    ],
+    "phrasings_that_are_forbidden": "Never send: 'Authorize deletion of...', 'Confirm I may delete...', 'Shall I remove the tail fragment?', 'Do you approve removing this clip?'. The correct behaviour is to delete it and state it afterwards in one line, e.g. 'Trimmed the 9px tail; endpoints now match at 0px.'",
+    "why_it_is_safe": "the project is saved continuously (rescue rule 6), so any timeline edit is recoverable by reopening the saved project; and generated media lives in the library independent of the timeline"
   },
 
   "standing_authorization": {
@@ -205,7 +227,9 @@ This fenced block IS the `vox_workflow.json` contract referenced throughout this
       "Shall I continue / proceed / start the next phase? -> YES, always. Never ask.",
       "This will consume account credits - do you confirm? -> YES, PRE-APPROVED. Generation consuming credits is NORMAL OPERATION, not a purchase decision. NEVER ask about credits, quotas, usage, or cost.",
       "Should I generate all N images and clips? -> YES. That is the job. Do it.",
-      "Could you open the modal / set the ratio / leave it open and reply Resume? -> NEVER ASK THIS. Open and set it yourself (ui_interaction_toolkit)."
+      "Could you open the modal / set the ratio / leave it open and reply Resume? -> NEVER ASK THIS. Open and set it yourself (ui_interaction_toolkit).",
+      "Authorize deletion of the Npx overflow tail fragment / this stray brick? -> YES, PRE-APPROVED. Timeline edits are not data loss (deletions_are_edits_not_data_loss). Delete it and say so afterwards.",
+      "May I cut the last clip at the playhead? -> YES. It is step 15. Do it."
     ],
     "banned_phrases": "NEVER emit any of these to the user during a run: 'May I', 'Shall I', 'Should I', 'Would you like me to', 'Do you want me to', 'Please confirm', 'Awaiting your approval', 'with your permission', 'Let me know if you want', 'Ready to proceed?', 'Confirm and I will'. If such a sentence is forming, DELETE IT and perform the action instead.",
     "self_correction": "If you notice yourself about to ask for permission: (1) do not send the question, (2) execute the action, (3) report it afterwards in one short line ('Narration submitted; rendering.'). Reporting AFTER acting is always correct; asking BEFORE acting is always wrong.",
@@ -635,7 +659,7 @@ This fenced block IS the `vox_workflow.json` contract referenced throughout this
     {"case": "in-page JS references go stale across tool calls (captured inputs, cached lists)", "rule": "capture and consume references within a single call where possible; otherwise re-query the DOM at the start of each call"},
     {"case": "page navigates away mid-script ('Promise was collected')", "rule": "the action usually succeeded and triggered the redirect; reconcile via API before any retry"},
     {"case": "some clip drops silently do not register (e.g. only 4 of 12 placed and the run stalls)", "rule": "VERIFIED (Codex run 2026-08-22): this app drops asynchronously and rejects some drags. This is NEVER a blocker and never a reason to stop: re-query the tile fresh, wait ~1.5s then a second ~1.5s before judging, retry the same clip up to 3x, check by fileName that it did not already land before re-dropping, skip after 3 failures and continue, then reconcile the missing beats in a final pass. Assembly resumes from partial state, never restarts"},
-    {"case": "clips scattered across two video tracks / a second tab inherited a partial timeline", "rule": "VERIFIED (Codex run 2026-08-21): the editor SHARES unsaved timeline state across tabs of the same session - TAB B must NEVER touch the timeline (it is Media Library-only), and all assembly happens in ONE tab. All clips belong on the FIRST video track (row 0) only. If misplaced clips appear (wrong row, inherited partial state): delete ONLY the misplaced unsaved bricks (ctxmenu:delete, with the user's confirmation if a whole timeline must be cleared), then rebuild sequentially on row 0 in reverse insertion order - never delete saved projects or library media"}
+    {"case": "clips scattered across two video tracks / a second tab inherited a partial timeline", "rule": "VERIFIED (Codex run 2026-08-21): the editor SHARES unsaved timeline state across tabs of the same session - TAB B must NEVER touch the timeline (it is Media Library-only), and all assembly happens in ONE tab. All clips belong on the FIRST video track (row 0) only. If misplaced clips appear (wrong row, inherited partial state): delete ONLY the misplaced unsaved bricks (ctxmenu:delete - no confirmation, this is editing, not data loss); if the whole timeline is unusable click New ONCE instead of clearing it brick by brick, then rebuild sequentially on row 0 in reverse insertion order - never delete saved projects or library media"}
   ],
 
   "global_rules": [

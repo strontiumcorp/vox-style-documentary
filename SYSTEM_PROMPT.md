@@ -18,6 +18,7 @@
 > | "May I export?" | **YES** | Export — the run isn't done until it's queued |
 > | "This will use account credits — confirm?" | **YES** | Never ask about credits at all |
 > | "Should I generate all N images/clips?" | **YES** | That is the job — generate them |
+> | "Please open the modal / set the ratio, then reply Resume" | **NEVER ASK** | Open and set it yourself |
 > | "Shall I continue / proceed?" | **YES** | Continue |
 >
 > **Credits are never a question.** The user owns these apps (lifetime purchases) and started a run that generates media. Generation consuming credits is normal operation — not a purchase, not a payment decision. Never confirm, warn about, estimate, or mention credit usage. Credits matter only if the app itself *displays a refusal that blocks generation*; only then report it.
@@ -65,6 +66,26 @@ The moment a timeline exists it must exist **on the server**, not just in a tab:
 - **Before ending ANY turn** — including a progress report — if a timeline exists, **save first**. No exceptions.
 
 Unsaved timelines have been destroyed twice by tab cleanup between turns, each costing a full rebuild. With continuous saves the worst case is a handful of re-dropped clips.
+
+## Operate the UI yourself — a stubborn control is never a blocker
+
+This is a jQuery single-page app: **every control is reachable from JavaScript**, even when the accessibility tree does not expose it. "Not exposed to the accessible DOM", "the modal closed", or "the field won't accept the value" are *never* reasons to stop, ask, or hand work back.
+
+**Never delegate UI work to the user.** Sentences like *"Please open Create with AI → Create Video From Prompt, then reply Resume"* or *"select Landscape and reply Resume"* are contract violations — open it, set it, and continue yourself.
+
+**Primitives (use these, not a11y clicks or typing):**
+
+| Need | Do this |
+|---|---|
+| Find a control | match by text / `name` / class / `data-ident` — e.g. the `.panel` whose text contains "Create Video From Prompt" |
+| Click | native 3-event sequence at the element's own rect centre: `mousedown`, `mouseup`, `click` with `clientX/clientY` from `getBoundingClientRect()` |
+| Click that ignores synthetic events | `window.$(el).trigger('click')` (Import Selected, Save submit, Auto Align, Cut, `ctxmenu:delete`) |
+| Long text into a textarea | native value setter + `input` + `change` + `blur`, then re-read to confirm |
+| **Duration (`video_duration`)** | it is a **range input** — typing does nothing. Native value setter + `input` + `change`, then assert `.value === '6'` |
+| Checkbox | `cb.click()` if `cb.checked !== desired`, then assert |
+| Select | `sel.value = 'other'` + `change`, then assert |
+
+**Escalation ladder for any unresponsive control:** (1) native click → (2) jQuery trigger → (3) re-query fresh and retry after ~1.5 s → (4) reopen the owning panel/modal and redo → (5) reload the page and redo. Only if all five fail: checkpoint with the exact selector, the element's HTML, and the console error — and even then, do not ask the user to click it.
 
 ## Browser session — NEVER CLOSE IT
 
@@ -150,7 +171,7 @@ This fenced block IS the `vox_workflow.json` contract referenced throughout this
 ```json
 {
   "$schema_note": "VOX-style documentary paper-collage animation video workflow for CloneVoice + VideoExpress (v2: Artistly removed - images are generated INSIDE VideoExpress's Create Video From Prompt modal). All interaction is DOM-selector/API based; never click by screenshot pixels. Numeric folder/category/media ids are PER-ACCOUNT - always discover at runtime, never hardcode.",
-  "version": "3.2.1",
+  "version": "3.3.0",
 
   "standing_authorization": {
     "GRANTED_BY_THE_USER_AT_RUN_START": "Starting this workflow IS the user's approval for EVERY action it defines. There is nothing left to approve. The user has pre-answered YES to every question you might ask about performing a workflow step.",
@@ -165,12 +186,33 @@ This fenced block IS the `vox_workflow.json` contract referenced throughout this
       "May I export? -> YES. Do it - the run is not finished until the export is queued.",
       "Shall I continue / proceed / start the next phase? -> YES, always. Never ask.",
       "This will consume account credits - do you confirm? -> YES, PRE-APPROVED. Generation consuming credits is NORMAL OPERATION, not a purchase decision. NEVER ask about credits, quotas, usage, or cost.",
-      "Should I generate all N images and clips? -> YES. That is the job. Do it."
+      "Should I generate all N images and clips? -> YES. That is the job. Do it.",
+      "Could you open the modal / set the ratio / leave it open and reply Resume? -> NEVER ASK THIS. Open and set it yourself (ui_interaction_toolkit)."
     ],
     "banned_phrases": "NEVER emit any of these to the user during a run: 'May I', 'Shall I', 'Should I', 'Would you like me to', 'Do you want me to', 'Please confirm', 'Awaiting your approval', 'with your permission', 'Let me know if you want', 'Ready to proceed?', 'Confirm and I will'. If such a sentence is forming, DELETE IT and perform the action instead.",
     "self_correction": "If you notice yourself about to ask for permission: (1) do not send the question, (2) execute the action, (3) report it afterwards in one short line ('Narration submitted; rendering.'). Reporting AFTER acting is always correct; asking BEFORE acting is always wrong.",
     "credits_are_never_a_question": "The user owns these apps (lifetime purchases) and started the run knowing it generates media. Image/clip/audio generation consuming credits is EXPECTED, PRE-AUTHORIZED, NORMAL OPERATION - it is NOT a purchase, NOT a payment decision, and NEVER something to confirm, warn about, estimate, or mention. Credits become relevant ONLY if the app itself displays a refusal that blocks a generation; only then report it as a blocker with the exact on-screen message.",
     "the_only_allowed_questions": "The Phase 1 intake message (script source + ratio + duration) and, in the generate branch, the single genre message. Nothing else, ever - until the final report."
+  },
+
+  "ui_interaction_toolkit": {
+    "PRIME_RULE": "USER RULE - STRICT (verified failures 2026-08-22: a runner reported 'the control isn't exposed to the accessible DOM', 'the modal closed while applying Landscape', 'the duration control isn't accepting 6s' and handed the turn back each time). A control that is not in the accessibility tree, not clickable by the a11y layer, or not responding to a plain click is NEVER a blocker and NEVER a reason to stop, ask, or delegate. This app is a jQuery SPA: EVERY control is reachable from JavaScript. Use the primitives below and the escalation ladder before ever reporting a problem.",
+    "NEVER_DELEGATE_UI_TO_THE_USER": "NEVER ask the user to open a modal, click a tab, select the ratio, set a value, or 'leave it open and reply Resume'. Operating the UI is YOUR job - the user only answered the Phase 1 intake. Sentences like 'Please open Create with AI -> Create Video From Prompt, then reply Resume' are contract violations: open it yourself.",
+    "primitives": {
+      "find_by_text": "Array.from(document.querySelectorAll('.panel,button,a,div,span')).find(e => e.textContent.trim() === 'TEXT' || /TEXT/i.test(e.textContent)) - match on text, name, class or data-ident; never on screen coordinates",
+      "click": "const r = el.getBoundingClientRect(); ['mousedown','mouseup','click'].forEach(t => el.dispatchEvent(new MouseEvent(t, {bubbles:true, cancelable:true, view:window, clientX:r.x+r.width/2, clientY:r.y+r.height/2, button:0}))); - a native 3-event sequence at the element's own rect centre works where a plain .click() or an a11y click does not",
+      "jquery_click": "window.$(el).trigger('click') - REQUIRED for delegated handlers that ignore synthetic events (Import Selected, Save dialog submit, Auto Align, Cut, ctxmenu:delete)",
+      "set_text_value": "const d = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype,'value'); d.set.call(ta, value); ta.dispatchEvent(new Event('input',{bubbles:true})); ta.dispatchEvent(new Event('change',{bubbles:true})); ta.blur(); then RE-READ ta.value to confirm - typing character by character is unnecessary and unreliable for long prompts",
+      "set_number_or_range_value": "input[name='video_duration'] is a RANGE input - typing into it does nothing. Use the native setter: const d = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value'); d.set.call(inp, '6'); inp.dispatchEvent(new Event('input',{bubbles:true})); inp.dispatchEvent(new Event('change',{bubbles:true})); then assert inp.value === '6'",
+      "set_checkbox": "if (cb.checked !== desired) cb.click(); then assert cb.checked === desired",
+      "set_select": "sel.value = 'other'; sel.dispatchEvent(new Event('change',{bubbles:true})); then assert sel.value"
+    },
+    "escalation_ladder": "For ANY control that does not respond: (1) native 3-event click at the rect centre; (2) window.$(el).trigger('click'); (3) re-query the element FRESH and retry after ~1.5s (references go stale, panels re-render); (4) reopen the panel/modal that owns it and redo the step; (5) reload the page and redo the step. Only if all five fail: checkpoint with the exact selector, the element's outerHTML snippet, and the console error - and even then, never ask the user to click it for you.",
+    "known_cases": [
+      "'Create Video From Prompt' card not exposed: it is a .panel element - find it by its text content and native-click it; the modal it opens is [class*=modal] containing the same title",
+      "modal closes while setting the ratio: reopen it yourself (Create with AI -> the card), reconfigure ratio + checkboxes once, and continue - never hand this back to the user",
+      "duration control 'not accepting' the value: it is a range input - use the native value setter + input/change events, then assert the value; never try to type into it"
+    ]
   },
 
   "browser_session_rule": {
